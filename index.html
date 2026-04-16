@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dovolená">
+<meta name="theme-color" content="#2d5a3d">
+<title>Dovolená — Rozpočítání nákladů</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+<script>
+  const manifest = {
+    name: "Dovolená — Rozpočítání nákladů",
+    short_name: "Dovolená",
+    description: "Spravedlivé rozdělení nákladů mezi rodiny",
+    start_url: ".",
+    display: "standalone",
+    background_color: "#f7f1e8",
+    theme_color: "#2d5a3d",
+    icons: [{
+      src: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%232d5a3d'/><text y='130' x='96' text-anchor='middle' font-size='110'>🌴</text></svg>`),
+      sizes: "192x192", type: "image/svg+xml"
+    }]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+  const manifestURL = URL.createObjectURL(blob);
+  document.addEventListener('DOMContentLoaded', () => {
+    const link = document.createElement('link');
+    link.rel = 'manifest'; link.href = manifestURL;
+    document.head.appendChild(link);
+  });
+</script>
+
+<style>
+  :root {
+    --sand:       #f7f1e8;
+    --sand-mid:   #ede4d3;
+    --sand-dark:  #d9ccb8;
+    --forest:     #2d5a3d;
+    --forest-mid: #3d7a54;
+    --forest-lt:  #e8f0eb;
+    --lavender:   #8b6fae;
+    --lav-light:  #b99fd0;
+    --lav-bg:     #f2edf8;
+    --lav-dark:   #6a509a;
+    --text:       #1e2e25;
+    --text-muted: #6b7e72;
+    --white:      #ffffff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--sand);
+    font-family: 'Lora', Georgia, serif;
+    color: var(--text);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 15% 0%, rgba(45,90,61,0.07) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 95%, rgba(139,111,174,0.10) 0%, transparent 55%);
+  }
+
+  h1, h2, h3, button, .label, th, .badge, .stat-lbl {
+    font-family: 'Cabin', sans-serif;
+  }
+
+  .card {
+    background: var(--white);
+    border-radius: 22px;
+    box-shadow: 0 2px 20px rgba(45,90,61,0.08), 0 1px 4px rgba(45,90,61,0.05);
+    border: 1px solid rgba(45,90,61,0.09);
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
+    padding: 16px 20px 14px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+  .card-header h2 { color: white; font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; }
+  .card-body { padding: 18px 20px; }
+
+  .label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+  }
+
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 10px 13px;
+    border: 1.5px solid var(--sand-dark);
+    border-radius: 11px;
+    font-family: 'Lora', serif;
+    font-size: 0.95rem;
+    color: var(--text);
+    background: var(--sand);
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input:focus {
+    border-color: var(--forest-mid);
+    box-shadow: 0 0 0 3px rgba(61,122,84,0.13);
+    background: white;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
+    color: white; border: none; border-radius: 13px;
+    padding: 14px 28px;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+    letter-spacing: 0.02em;
+    box-shadow: 0 4px 14px rgba(45,90,61,0.25);
+  }
+  .btn-primary:hover { opacity: 0.91; transform: translateY(-2px); box-shadow: 0 6px 18px rgba(45,90,61,0.28); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-lav {
+    background: linear-gradient(135deg, var(--lavender) 0%, var(--lav-light) 100%);
+    color: white; border: none; border-radius: 11px;
+    padding: 10px 18px; font-size: 0.875rem; font-weight: 700; cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    box-shadow: 0 2px 10px rgba(139,111,174,0.22);
+  }
+  .btn-lav:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: transparent; color: #a03060;
+    border: 1.5px solid #e8c0d0; border-radius: 9px;
+    padding: 6px 12px; font-size: 0.78rem; font-weight: 600; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-ghost:hover { background: #fdf0f5; }
+
+  .btn-outline {
+    background: transparent; color: var(--forest);
+    border: 1.5px solid var(--sand-dark); border-radius: 11px;
+    padding: 10px 18px; font-size: 0.875rem; font-weight: 600; cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .btn-outline:hover { background: var(--forest-lt); border-color: var(--forest-mid); }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; }
+  .badge-green   { background: #d6f0e0; color: #1a6a3a; }
+  .badge-red     { background: #fde8f0; color: #a0305a; }
+  .badge-neutral { background: var(--forest-lt); color: var(--forest); }
+
+  .stat-box {
+    background: var(--sand); border-radius: 14px;
+    padding: 14px 12px; text-align: center;
+    border: 1px solid var(--sand-dark);
+  }
+  .stat-val { font-size: 1.2rem; font-weight: 700; color: var(--forest); letter-spacing: -0.01em; }
+  .stat-lbl { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-top: 3px; }
+
+  .settlement-row { display: flex; align-items: center; gap: 10px; padding: 13px 0; }
+  .settlement-row + .settlement-row { border-top: 1px solid var(--sand-mid); }
+
+  .settlement-arrow {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; background: var(--lav-bg);
+    border-radius: 50%; color: var(--lavender); font-size: 0.9rem; flex-shrink: 0;
+  }
+
+  .amount-pill {
+    background: linear-gradient(135deg, var(--lavender), var(--lav-dark));
+    color: white; border-radius: 9px; padding: 5px 11px;
+    font-size: 0.88rem; font-weight: 700; white-space: nowrap;
+  }
+
+  .family-card {
+    background: var(--white); border: 1.5px solid var(--sand-dark);
+    border-radius: 16px; overflow: hidden;
+    animation: fadeSlideIn 0.3s ease both;
+    box-shadow: 0 1px 6px rgba(45,90,61,0.06);
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .family-card-head {
+    background: linear-gradient(90deg, var(--forest-lt) 0%, #f5faf6 100%);
+    padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--sand-dark);
+  }
+
+  table { border-collapse: separate; border-spacing: 0; width: 100%; }
+  th {
+    background: var(--sand); font-size: 0.68rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-muted); font-weight: 700; padding: 9px 10px;
+  }
+  th:first-child { padding-left: 18px; } th:last-child { padding-right: 18px; }
+  td { padding: 10px 10px; }
+  td:first-child { padding-left: 18px; } td:last-child { padding-right: 18px; }
+  tr:not(:last-child) td { border-bottom: 1px solid var(--sand-mid); }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--forest); color: white;
+    font-family: 'Cabin', sans-serif; font-size: 0.9rem; font-weight: 600;
+    padding: 11px 22px; border-radius: 99px;
+    box-shadow: 0 4px 18px rgba(45,90,61,0.35);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0; pointer-events: none; z-index: 9999; white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* Share sheet */
+  #share-sheet {
+    position: fixed; inset: 0; background: rgba(30,46,37,0.45);
+    display: flex; align-items: flex-end; justify-content: center;
+    z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  #share-sheet.open { opacity: 1; pointer-events: all; }
+  #share-inner {
+    background: white; border-radius: 24px 24px 0 0;
+    padding: 28px 24px 44px; width: 100%; max-width: 480px;
+    transform: translateY(100%); transition: transform 0.3s ease;
+  }
+  #share-sheet.open #share-inner { transform: translateY(0); }
+
+  .share-btn {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 0; border-bottom: 1px solid var(--sand-mid);
+    cursor: pointer; width: 100%; background: none;
+    border-left: none; border-right: none; border-top: none;
+    font-family: 'Cabin', sans-serif; font-size: 0.95rem; font-weight: 600;
+    color: var(--text); text-align: left; transition: background 0.15s; border-radius: 0;
+  }
+  .share-btn:last-child { border-bottom: none; }
+  .share-btn:hover { background: var(--sand); border-radius: 10px; padding-left: 10px; padding-right: 10px; }
+  .share-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; flex-shrink: 0;
+  }
+
+  /* Install hint */
+  #install-hint {
+    display: none; background: var(--lav-bg); border: 1.5px solid var(--lav-light);
+    border-radius: 14px; padding: 13px 16px; margin-bottom: 16px;
+    font-size: 0.85rem; color: var(--lav-dark);
+    align-items: center; gap: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- Share sheet -->
+<div id="share-sheet" onclick="closeShare(event)">
+  <div id="share-inner">
+    <h3 style="font-size:1.1rem; margin-bottom:4px; color:var(--forest);">Sdílet výsledky</h3>
+    <p style="font-size:0.83rem; color:var(--text-muted); margin-bottom:18px; font-family:'Lora',serif;">Vyber způsob sdílení</p>
+    <button class="share-btn" onclick="shareText()">
+      <div class="share-icon" style="background:var(--forest-lt);">📋</div>
+      <div><div>Kopírovat text</div><div style="font-size:0.78rem;color:var(--text-muted);font-weight:400;">Vhodné pro sdílení do chatu</div></div>
+    </button>
+    <button class="share-btn" onclick="shareNative()">
+      <div class="share-icon" style="background:var(--lav-bg);">📤</div>
+      <div><div>Sdílet…</div><div style="font-size:0.78rem;color:var(--text-muted);font-weight:400;">WhatsApp, Messenger, email…</div></div>
+    </button>
+    <button class="share-btn" onclick="closeShare()">
+      <div class="share-icon" style="background:#fdf0f5;">✕</div>
+      <div>Zavřít</div>
+    </button>
+  </div>
+</div>
+
+<div style="max-width:640px; margin:0 auto; padding: 28px 14px 70px;">
+
+  <!-- PWA install hint -->
+  <div id="install-hint">
+    <span style="font-size:1.4rem;">📲</span>
+    <span id="install-hint-text"></span>
+    <button onclick="document.getElementById('install-hint').style.display='none'"
+      style="margin-left:auto; background:none; border:none; color:var(--lav-dark); font-size:1rem; cursor:pointer; padding:2px 6px;">✕</button>
+  </div>
+
+  <!-- Header -->
+  <div style="text-align:center; margin-bottom:30px; padding-top:6px;">
+    <div style="font-size:2.2rem; margin-bottom:6px;">🌴</div>
+    <h1 style="font-size:2rem; color:var(--forest); letter-spacing:-0.01em; margin-bottom:5px;">Dovolená</h1>
+    <p style="color:var(--text-muted); font-size:0.93rem; font-family:'Lora',serif; font-style:italic;">Spravedlivé rozdělení nákladů mezi rodiny</p>
+  </div>
+
+  <!-- Families -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-header">
+      <span style="font-size:1.25rem;">👨‍👩‍👧‍👦</span>
+      <h2>Rodiny a platby</h2>
+    </div>
+    <div class="card-body">
+      <div id="families-list" style="display:flex; flex-direction:column; gap:12px;"></div>
+      <div style="margin-top:16px; padding-top:16px; border-top:1px solid var(--sand-mid);">
+        <button class="btn-lav" onclick="addFamily()" style="width:100%;">＋ Přidat rodinu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div style="display:flex; gap:10px; margin-bottom:20px;">
+    <button class="btn-outline" onclick="resetAll()" title="Resetovat vše" style="flex:0 0 auto; padding:14px 18px; font-size:1rem;">↺</button>
+    <button class="btn-primary" onclick="calculate()" style="flex:1;">Spočítat rozdělení ✦</button>
+  </div>
+
+  <!-- Results -->
+  <div id="results" style="display:none;">
+
+    <div id="stats-row" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px;"></div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-header"><span style="font-size:1.15rem;">📊</span><h2>Přehled rodin</h2></div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr>
+            <th style="text-align:left;">Rodina</th>
+            <th style="text-align:center;">Jedn.</th>
+            <th style="text-align:right;">Zaplatili</th>
+            <th style="text-align:right;">Podíl</th>
+            <th style="text-align:right;">Rozdíl</th>
+          </tr></thead>
+          <tbody id="results-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-header"><span style="font-size:1.15rem;">💸</span><h2>Vyrovnání plateb</h2></div>
+      <div class="card-body" id="settlements-body"></div>
+    </div>
+
+    <button class="btn-outline" onclick="openShare()" style="width:100%; padding:13px; font-size:0.95rem;">
+      📤 &nbsp;Sdílet výsledky
+    </button>
+
+  </div>
+</div>
+
+<script>
+// ─── Storage ───────────────────────────────────────────────
+const STORAGE_KEY = 'dovolena_v2';
+
+function saveToStorage() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(getFamilyData())); } catch(e) {}
+}
+function loadFromStorage() {
+  try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; }
+}
+
+// ─── Families ──────────────────────────────────────────────
+let familyCounter = 0;
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function addFamily(name='', adults=2, children=0, paid=0) {
+  familyCounter++;
+  const id = familyCounter;
+  const div = document.createElement('div');
+  div.className = 'family-card'; div.id = 'family-' + id;
+  div.innerHTML = `
+    <div class="family-card-head">
+      <span style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:var(--forest);">Rodina #${id}</span>
+      <button class="btn-ghost" onclick="removeFamily(${id})">✕ Odebrat</button>
+    </div>
+    <div style="padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:11px;">
+      <div style="grid-column:1/-1;">
+        <label class="label">Název rodiny</label>
+        <input type="text" id="name-${id}" placeholder="např. Novákovi" value="${esc(name)}" oninput="saveToStorage()">
+      </div>
+      <div>
+        <label class="label">Dospělí (×1)</label>
+        <input type="number" id="adults-${id}" value="${adults}" min="0" placeholder="0" oninput="saveToStorage()">
+      </div>
+      <div>
+        <label class="label">Děti (×0,5)</label>
+        <input type="number" id="children-${id}" value="${children}" min="0" placeholder="0" oninput="saveToStorage()">
+      </div>
+      <div style="grid-column:1/-1;">
+        <label class="label">Zaplaceno (Kč)</label>
+        <input type="number" id="paid-${id}" value="${paid}" min="0" placeholder="0" oninput="saveToStorage()">
+      </div>
+    </div>`;
+  document.getElementById('families-list').appendChild(div);
+  saveToStorage();
+}
+
+function removeFamily(id) {
+  const el = document.getElementById('family-' + id);
+  if (el) {
+    el.style.cssText += 'opacity:0;transform:scale(0.95);transition:all 0.2s;';
+    setTimeout(() => { el.remove(); saveToStorage(); }, 200);
+  }
+}
+
+function getFamilyData() {
+  return [...document.querySelectorAll('[id^="family-"]')].map(el => {
+    const id = el.id.replace('family-','');
+    return {
+      name:     document.getElementById('name-'+id)?.value.trim() || ('Rodina '+id),
+      adults:   parseFloat(document.getElementById('adults-'+id)?.value) || 0,
+      children: parseFloat(document.getElementById('children-'+id)?.value) || 0,
+      paid:     parseFloat(document.getElementById('paid-'+id)?.value) || 0,
+    };
+  });
+}
+
+function resetAll() {
+  if (!confirm('Opravdu smazat všechna data?')) return;
+  document.getElementById('families-list').innerHTML = '';
+  document.getElementById('results').style.display = 'none';
+  familyCounter = 0;
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  addFamily('', 2, 0, 0);
+}
+
+// ─── Helpers ───────────────────────────────────────────────
+function fmt(n)  { return Math.abs(n).toLocaleString('cs-CZ',{minimumFractionDigits:2,maximumFractionDigits:2})+' Kč'; }
+function fmtR(n) { return Math.round(Math.abs(n)).toLocaleString('cs-CZ')+' Kč'; }
+
+// ─── Calculate ─────────────────────────────────────────────
+let lastResults = null;
+
+function calculate() {
+  const raw = getFamilyData();
+  if (raw.length < 2) { showToast('Přidej alespoň dvě rodiny.'); return; }
+
+  const families = raw.map(f => ({...f, units: f.adults + f.children * 0.5}));
+  const totalUnits    = families.reduce((s,f) => s+f.units, 0);
+  const totalPaid     = families.reduce((s,f) => s+f.paid,  0);
+  const pricePerUnit  = totalUnits > 0 ? totalPaid / totalUnits : 0;
+
+  families.forEach(f => {
+    f.share   = f.units * pricePerUnit;
+    f.balance = f.paid - f.share;
+  });
+
+  // Stats
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-box"><div class="stat-val">${totalPaid.toLocaleString('cs-CZ')} Kč</div><div class="stat-lbl">Celkem zaplaceno</div></div>
+    <div class="stat-box"><div class="stat-val">${totalUnits.toLocaleString('cs-CZ',{maximumFractionDigits:1})}</div><div class="stat-lbl">Celkem jednotek</div></div>
+    <div class="stat-box"><div class="stat-val">${Math.round(pricePerUnit).toLocaleString('cs-CZ')} Kč</div><div class="stat-lbl">Cena / jednotka</div></div>`;
+
+  // Table
+  document.getElementById('results-table').innerHTML = families.map(f => {
+    const d = f.balance;
+    const badge = d > 0.5
+      ? `<span class="badge badge-green">+${fmt(d)}</span>`
+      : d < -0.5
+        ? `<span class="badge badge-red">−${fmt(-d)}</span>`
+        : `<span class="badge badge-neutral">vyrovnáno</span>`;
+    return `<tr>
+      <td><div style="font-weight:600;font-family:'Cabin',sans-serif;">${f.name}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:1px;">${f.adults} dosp. + ${f.children} děti</div></td>
+      <td style="text-align:center;color:var(--forest);font-weight:700;font-family:'Cabin',sans-serif;">${f.units.toLocaleString('cs-CZ',{maximumFractionDigits:1})}</td>
+      <td style="text-align:right;font-family:'Cabin',sans-serif;">${f.paid.toLocaleString('cs-CZ')} Kč</td>
+      <td style="text-align:right;font-family:'Cabin',sans-serif;">${Math.round(f.share).toLocaleString('cs-CZ')} Kč</td>
+      <td style="text-align:right;">${badge}</td>
+    </tr>`;
+  }).join('');
+
+  // Settlements (greedy min-transfers)
+  const creditors = families.filter(f => f.balance >  0.5).map(f => ({name:f.name, amount: f.balance}));
+  const debtors   = families.filter(f => f.balance < -0.5).map(f => ({name:f.name, amount:-f.balance}));
+  const transactions = [];
+  let ci=0, di=0;
+  while (ci < creditors.length && di < debtors.length) {
+    const c=creditors[ci], d=debtors[di], amount=Math.min(c.amount,d.amount);
+    transactions.push({from:d.name, to:c.name, amount});
+    c.amount -= amount; d.amount -= amount;
+    if (c.amount < 0.5) ci++;
+    if (d.amount < 0.5) di++;
+  }
+  lastResults = { families, totalPaid, pricePerUnit, transactions };
+
+  document.getElementById('settlements-body').innerHTML = transactions.length === 0
+    ? `<div style="text-align:center;padding:20px 0;color:var(--text-muted);">
+        <div style="font-size:2rem;margin-bottom:8px;">🎉</div>
+        <div style="font-weight:700;font-size:1.05rem;font-family:'Cabin',sans-serif;color:var(--forest);">Vše je vyrovnáno!</div>
+        <div style="font-size:0.88rem;margin-top:4px;font-style:italic;">Každá rodina zaplatila přesně svůj díl.</div>
+      </div>`
+    : transactions.map(t => `
+        <div class="settlement-row">
+          <div style="flex:1;font-weight:700;font-family:'Cabin',sans-serif;">${t.from}</div>
+          <div class="settlement-arrow">→</div>
+          <div style="flex:1;font-weight:700;font-family:'Cabin',sans-serif;text-align:right;">${t.to}</div>
+          <div style="margin-left:10px;"><span class="amount-pill">${fmtR(t.amount)}</span></div>
+        </div>`).join('');
+
+  const res = document.getElementById('results');
+  res.style.display = 'block';
+  setTimeout(() => res.scrollIntoView({behavior:'smooth', block:'start'}), 60);
+}
+
+// ─── Share ─────────────────────────────────────────────────
+function buildShareText() {
+  if (!lastResults) return '';
+  const {families, totalPaid, pricePerUnit, transactions} = lastResults;
+  const date = new Date().toLocaleDateString('cs-CZ');
+  let txt = `🌴 DOVOLENÁ — Rozdělení nákladů (${date})\n${'─'.repeat(35)}\n`;
+  txt += `Celkem zaplaceno: ${totalPaid.toLocaleString('cs-CZ')} Kč\n`;
+  txt += `Cena za jednotku: ${Math.round(pricePerUnit).toLocaleString('cs-CZ')} Kč\n\nPŘEHLED:\n`;
+  families.forEach(f => {
+    const diff = f.balance > 0.5 ? `přeplatek +${fmtR(f.balance)}` : f.balance < -0.5 ? `doplatek −${fmtR(-f.balance)}` : 'vyrovnáno';
+    txt += `  • ${f.name} (${f.units} jedn.): ${diff}\n`;
+  });
+  if (transactions.length) {
+    txt += `\nVYROVNÁNÍ:\n`;
+    transactions.forEach(t => { txt += `  • ${t.from} → ${t.to}: ${fmtR(t.amount)}\n`; });
+  } else { txt += `\n✅ Vše vyrovnáno, žádné převody nejsou potřeba.\n`; }
+  return txt;
+}
+
+function openShare() {
+  if (!lastResults) { showToast('Nejdřív spočítej rozdělení.'); return; }
+  document.getElementById('share-sheet').classList.add('open');
+}
+function closeShare(e) {
+  if (!e || e.target === document.getElementById('share-sheet'))
+    document.getElementById('share-sheet').classList.remove('open');
+}
+function shareText() {
+  const text = buildShareText();
+  navigator.clipboard?.writeText(text)
+    .then(() => { closeShare(); showToast('✓ Zkopírováno do schránky'); })
+    .catch(() => legacyCopy(text));
+  if (!navigator.clipboard) legacyCopy(text);
+}
+function legacyCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); closeShare(); showToast('✓ Zkopírováno do schránky'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+function shareNative() {
+  if (navigator.share) {
+    navigator.share({title:'Dovolená — Rozdělení nákladů', text: buildShareText()}).catch(()=>{});
+    closeShare();
+  } else { shareText(); }
+}
+
+// ─── Toast ─────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ─── PWA install hint ──────────────────────────────────────
+function showInstallHint() {
+  const hint = document.getElementById('install-hint');
+  const ua = navigator.userAgent;
+  const isIOS = /iphone|ipad|ipod/i.test(ua);
+  const isAndroid = /android/i.test(ua);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isStandalone) return;
+  if (isIOS) {
+    document.getElementById('install-hint-text').innerHTML =
+      '<strong>Přidat na plochu:</strong> Klepni na tlačítko Sdílet v Safari (□↑) a vyber „Přidat na plochu".';
+    hint.style.display = 'flex';
+  } else if (isAndroid) {
+    document.getElementById('install-hint-text').innerHTML =
+      '<strong>Přidat na plochu:</strong> Klepni na ⋮ v Chrome a vyber „Přidat na plochu" nebo „Nainstalovat aplikaci".';
+    hint.style.display = 'flex';
+  }
+}
+
+// ─── Init ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = loadFromStorage();
+  if (saved && saved.length > 0) {
+    saved.forEach(f => addFamily(f.name, f.adults, f.children, f.paid));
+    showToast('✓ Načteno z posledního použití');
+  } else {
+    addFamily('Novákovi',    2, 2, 15000);
+    addFamily('Procházkovi', 2, 1,  8000);
+    addFamily('Horáčkovi',   1, 0,  5000);
+  }
+  setTimeout(showInstallHint, 1200);
+});
+</script>
+</body>
+</html>
